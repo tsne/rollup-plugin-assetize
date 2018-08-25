@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-assetize",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A small rollup plugin for put assets in place.",
   "main": "dist/rollup-plugin-assetize.cjs.js",
   "module": "dist/rollup-plugin-assetize.es.js",
