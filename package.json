@@ -1,0 +1,39 @@
+{
+  "name": "rollup-plugin-assetize",
+  "version": "1.0.0",
+  "description": "A small rollup plugin for put assets in place.",
+  "main": "dist/rollup-plugin-assetize.cjs.js",
+  "module": "dist/rollup-plugin-assetize.es.js",
+  "jsnext:main": "dist/rollup-plugin-assetize.es.js",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "rollup",
+    "rollup-plugin",
+    "assets"
+  ],
+  "scripts": {
+    "prebuild": "rm -rf dist/*",
+    "build": "rollup -c",
+    "prepublishOnly": "npm run build"
+  },
+  "author": "tsne",
+  "license": "MIT",
+  "homepage": "https://github.com/tsne/rollup-plugin-assetize",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tsne/rollup-plugin-assetize.git"
+  },
+  "devDependencies": {
+    "rollup": "^0.65.0",
+    "rollup-plugin-tsc": "^1.1.11"
+  },
+  "dependencies": {
+    "@leizm/html-parser": "^1.0.0-rc7",
+    "css-tree": "^1.0.0-alpha.29",
+    "csso": "^3.5.1",
+    "terser": "^3.8.1"
+  }
+}
