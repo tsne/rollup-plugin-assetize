@@ -1,6 +1,5 @@
-import * as path from "path";
-import {Asset, AssetLoader, assetName} from "./asset";
-import {readFile, isAbsoluteURL} from "./util";
+import {Asset, AssetContent, AssetLoader} from "./asset";
+import {isAbsoluteURL} from "./url";
 
 
 const csstree = require("css-tree");
@@ -8,54 +7,44 @@ const csso = require("csso");
 
 
 
-export function loadCSS(filename: string, loadAsset: AssetLoader, minify: boolean): Promise<Asset> {
-	return readFile(filename).then(data => {
-		const errors = [];
-		const ast = csstree.parse(data.toString("utf8"), {
-			positions: true,
-			onParseError: errors.push,
-			filename,
-		});
-		if(errors.length) {
-			throw errors;
+export function loadCSS(data: Buffer, loadAsset: AssetLoader, minify: boolean): Promise<AssetContent> {
+	const errors = [];
+	const ast = csstree.parse(data.toString("utf8"), {
+		positions: true,
+		onParseError: errors.push,
+	});
+	if(errors.length) {
+		return Promise.reject(errors);
+	}
+
+	const refLoads: Array<Promise<Asset>> = [];
+
+	const loadRef = (node: any, key: string) => {
+		const url = node[key];
+		if(typeof url === "string" && !isAbsoluteURL(url)) {
+			refLoads.push(loadAsset(url).then(asset => {
+				if(asset) {
+					node[key] = asset.url;
+				}
+				return asset;
+			}));
 		}
+	}
 
-		const dir = path.dirname(filename);
-		const refLoads: Array<Promise<Asset>> = [];
-
-		const loadRef = (node: any, key: string) => {
-			const url = node[key];
-			if(typeof url === "string" && !isAbsoluteURL(url)) {
-				const refname = path.join(dir, url);
-				refLoads.push(loadAsset(refname).then(asset => {
-					if(asset) {
-						node[key] = asset.name;
-					}
-					return asset;
-				}));
-			}
+	const loadRefs = (node: any) => {
+		if(node.type === "Url") {
+			loadRef(node, "value");
 		}
+		if(node.children) {
+			node.children.forEach(loadRefs);
+		}
+	};
 
-		const loadRefs = (node: any) => {
-			if(node.type === "Url") {
-				loadRef(node, "value");
-			}
-			if(node.children) {
-				node.children.forEach(loadRefs);
-			}
-		};
-
-		loadRefs(ast);
-		return Promise.all(refLoads).then(refs => {
-			let content = ast;
-			if(minify) {
-				content = Buffer.from(csso.compress(content));
-			}
-			return {
-				name: assetName(filename, content),
-				refs: refs.filter(ref => ref != null),
-				content,
-			};
-		});
+	loadRefs(ast);
+	return Promise.all(refLoads).then(refs => {
+		if(minify) {
+			data = Buffer.from(csso.compress(ast));
+		}
+		return {data, refs};
 	});
 }

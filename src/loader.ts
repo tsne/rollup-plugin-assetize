@@ -1,19 +1,21 @@
+import * as fs from "fs";
 import * as path from "path";
-import {Asset, AssetLoader, assetName} from "./asset";
+import {Asset, AssetContent, AssetLoader, assetName, assetExt} from "./asset";
 import {loadCSS} from "./style";
 import {loadHTML} from "./markup";
-import {readFile} from "./util";
 
 
 
 export interface LoaderOptions {
 	minify: boolean;
+	assetRoot: string;
+	customUrl: (filename: string) => string;
 }
 
-type LoaderFunc = (filename: string, loadAsset: AssetLoader, minify?: boolean) => Promise<Asset>;
+type ContentLoader = (data: Buffer, loadAsset: AssetLoader, minify?: boolean) => Promise<AssetContent>;
 
 
-const loaders: {[ext: string]: LoaderFunc} = {
+const contentLoaders: {[ext: string]: ContentLoader} = {
 	".htm": loadHTML,
 	".html": loadHTML,
 	".css": loadCSS,
@@ -32,13 +34,24 @@ const loaders: {[ext: string]: LoaderFunc} = {
 };
 
 
-export function canLoad(name) {
-	return assetExt(name) in loaders;
+export function canLoad(name): boolean {
+	return assetExt(name) in contentLoaders;
 }
 
 export function assetLoader(opts: LoaderOptions): AssetLoader {
 	const assets = new Map<string, Asset>(); // filename => asset
 	const loading = new Set<string>();
+
+	const newAsset = (filename: string, content: AssetContent): Asset => {
+		const name = assetName(filename, content.data);
+		return {
+			path: filename,
+			name,
+			url: opts.customUrl(filename) || path.join("/", opts.assetRoot, name),
+			refs: content.refs.filter(ref => ref != null),
+			content: content.data,
+		};
+	};
 
 	return function loadAsset(filename: string): Promise<Asset> {
 		const asset = assets.get(filename);
@@ -47,8 +60,8 @@ export function assetLoader(opts: LoaderOptions): AssetLoader {
 		}
 
 		const ext = assetExt(filename);
-		const load = loaders[ext];
-		if(!load) {
+		const loadContent = contentLoaders[ext];
+		if(!loadContent) {
 			return Promise.resolve(null);
 		}
 
@@ -57,7 +70,15 @@ export function assetLoader(opts: LoaderOptions): AssetLoader {
 		}
 		loading.add(filename);
 
-		return load(filename, loadAsset, opts.minify).then(asset => {
+		const dir = path.dirname(filename);
+		const loader = (fname: string): Promise<Asset> => {
+			return loadAsset(path.join(dir, fname));
+		};
+
+		return readFile(filename).then(data => {
+			return loadContent(data, loader, opts.minify);
+		}).then(content => {
+			const asset = newAsset(filename, content);
 			loading.delete(filename);
 			assets.set(filename, asset);
 			return asset;
@@ -66,14 +87,21 @@ export function assetLoader(opts: LoaderOptions): AssetLoader {
 }
 
 
-function loadRaw(filename: string, loadAsset: AssetLoader): Promise<Asset> {
-	return readFile(filename).then(data => ({
-		name: assetName(filename, data),
+function loadRaw(data: Buffer, loadAsset: AssetLoader): Promise<AssetContent> {
+	return Promise.resolve({
+		data,
 		refs: [],
-		content: data,
-	}));
+	});
 }
 
-function assetExt(name: string): string {
-	return path.extname(name).toLowerCase();
+function readFile(filename: string): Promise<Buffer> {
+	return new Promise<Buffer>((resolve, reject) => {
+		fs.readFile(filename, (err, data) => {
+			if(err) {
+				reject(err);
+			} else {
+				resolve(data);
+			}
+		})
+	});
 }

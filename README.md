@@ -19,11 +19,16 @@ export default {
 
 	plugins: [
 		assetize({
+			input: [],            // addition assets which should be emitted
 			output: {
-				dir: "assets", // directory where the assets should be emitted
-				minify: false, // minify the assets?
+				dir: "assets",    // directory where the assets should be emitted
+				minify: false,    // minify the assets?
+				paths: {},        // custom output path mappings (source path => target path)
 			},
-			root: "/assets",   // root path of asset urls
+			web: {
+				root: "/assets",  // root path of asset urls
+				paths: {},        // custom url path mappings (source path => target path)
+			},
 		}),
 	]
 };

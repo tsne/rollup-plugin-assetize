@@ -11,6 +11,7 @@ export default {
 		"crypto",
 		"fs",
 		"path",
+		"process",
 	],
 	plugins: [
 		require("rollup-plugin-tsc")({
