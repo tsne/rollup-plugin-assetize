@@ -27,13 +27,13 @@
     "url": "git+https://github.com/tsne/rollup-plugin-assetize.git"
   },
   "devDependencies": {
-    "rollup": "^0.65.0",
-    "rollup-plugin-tsc": "^1.1.11"
+    "rollup": "^1.0.0",
+    "rollup-plugin-tsc": "^1.1.15"
   },
   "dependencies": {
     "@leizm/html-parser": "^1.0.0-rc7",
     "css-tree": "^1.0.0-alpha.29",
     "csso": "^3.5.1",
-    "terser": "^3.8.1"
+    "terser": "^3.13.1"
   }
 }

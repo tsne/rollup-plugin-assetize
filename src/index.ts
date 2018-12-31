@@ -84,7 +84,7 @@ export default function assetize(config?: PluginConfig): rollup.Plugin {
 			return addAsset(filename).then(asset => `export default "${asset.url}";`);
 		},
 
-		transformChunk(code: string, opts: rollup.OutputOptions): Promise<{code: string; map: rollup.RawSourceMap}>|null {
+		renderChunk(code: string, chunk: rollup.RenderedChunk, opts: rollup.OutputOptions): Promise<{code: string; map: rollup.RawSourceMap}>|null {
 			if(!config.output.minify) {
 				return null;
 			}
